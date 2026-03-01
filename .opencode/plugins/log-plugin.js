@@ -144,10 +144,33 @@ export const LogPlugin = async ({ client, directory }) => {
     }
   }
 
+  const toolDefinitionHook = async (input, output) => {
+    try {
+      const sessionID = input.sessionID || "global"
+      const filePath = getOrCreateLogFile(sessionID)
+
+      writeLog(filePath, {
+        type: "tool_definition",
+        input: input,
+        output: output,
+      })
+    } catch (error) {
+      await client.app.log({
+        body: {
+          service: "log-plugin",
+          level: "error",
+          message: "Failed to log tool definition",
+          extra: { error: error.message, toolID: input?.toolID },
+        },
+      })
+    }
+  }
+
   return {
     "chat.message": chatMessageHook,
     "experimental.chat.messages.transform": chatMessagesTransformHook,
     "experimental.chat.system.transform": chatSystemTransformHook,
     "event": eventHook,
+    "tool.definition": toolDefinitionHook,
   }
 }
